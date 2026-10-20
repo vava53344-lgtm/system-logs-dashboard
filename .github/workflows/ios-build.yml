@@ -20,7 +20,7 @@ jobs:
         run: |
           brew install xcodegen
 
-      - name: Generate app source files and project
+      - name: Generate app source and project
         shell: bash
         run: |
           mkdir -p SystemLogsApp/Assets.xcassets/AppIcon.appiconset
@@ -107,19 +107,19 @@ jobs:
 
           cat > SystemLogsApp/Assets.xcassets/Contents.json <<'EOF'
           {
-            "info" : {
-              "version" : 1,
-              "author" : "xcode"
+            "info": {
+              "version": 1,
+              "author": "xcode"
             }
           }
           EOF
 
           cat > SystemLogsApp/Assets.xcassets/AppIcon.appiconset/Contents.json <<'EOF'
           {
-            "images" : [],
-            "info" : {
-              "version" : 1,
-              "author" : "xcode"
+            "images": [],
+            "info": {
+              "version": 1,
+              "author": "xcode"
             }
           }
           EOF
@@ -183,8 +183,11 @@ jobs:
                       background.ignoresSafeArea()
 
                       HStack(alignment: .top, spacing: 18) {
-                          sidebar.frame(width: 290)
-                          mainPanel.frame(maxWidth: .infinity, maxHeight: .infinity)
+                          sidebar
+                              .frame(width: 290)
+
+                          mainPanel
+                              .frame(maxWidth: .infinity, maxHeight: .infinity)
                       }
                       .padding(20)
                   }
@@ -202,7 +205,11 @@ jobs:
 
                       panel {
                           VStack(alignment: .leading, spacing: 10) {
-                              Text("Search").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              Text("Search")
+                                  .font(.system(size: 11, weight: .bold))
+                                  .foregroundColor(mutedText)
+                                  .textCase(.uppercase)
+
                               TextField("Filter logs...", text: $searchText)
                                   .padding(12)
                                   .background(selectedTheme ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
@@ -213,7 +220,11 @@ jobs:
 
                       panel {
                           VStack(alignment: .leading, spacing: 10) {
-                              Text("Levels").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              Text("Levels")
+                                  .font(.system(size: 11, weight: .bold))
+                                  .foregroundColor(mutedText)
+                                  .textCase(.uppercase)
+
                               ForEach(LogLevel.allCases, id: \.self) { level in
                                   Toggle(isOn: Binding(
                                       get: { selectedLevels.contains(level) },
@@ -239,14 +250,18 @@ jobs:
 
                       panel {
                           VStack(alignment: .leading, spacing: 10) {
-                              Text("Source").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
-                              Picker(\"Source\", selection: $selectedSource) {
-                                  Text(\"All sources\").tag(\"all\")
-                                  Text(\"Kernel\").tag(\"kernel\")
-                                  Text(\"API\").tag(\"api\")
-                                  Text(\"Database\").tag(\"db\")
-                                  Text(\"Auth\").tag(\"auth\")
-                                  Text(\"Scheduler\").tag(\"scheduler\")
+                              Text("Source")
+                                  .font(.system(size: 11, weight: .bold))
+                                  .foregroundColor(mutedText)
+                                  .textCase(.uppercase)
+
+                              Picker("Source", selection: $selectedSource) {
+                                  Text("All sources").tag("all")
+                                  Text("Kernel").tag("kernel")
+                                  Text("API").tag("api")
+                                  Text("Database").tag("db")
+                                  Text("Auth").tag("auth")
+                                  Text("Scheduler").tag("scheduler")
                               }
                               .pickerStyle(.menu)
                               .tint(textColor)
@@ -255,28 +270,36 @@ jobs:
 
                       panel {
                           VStack(alignment: .leading, spacing: 10) {
-                              Text(\"Theme\").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
-                              HStack(spacing: 10) {
-                                  Button(\"Dark\") { selectedTheme = false }
-                                      .frame(maxWidth: .infinity)
-                                      .padding(.vertical, 10)
-                                      .background(selectedTheme ? Color.white.opacity(0.12) : Color.cyan.opacity(0.9))
-                                      .foregroundColor(selectedTheme ? textColor : .black)
-                                      .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                              Text("Theme")
+                                  .font(.system(size: 11, weight: .bold))
+                                  .foregroundColor(mutedText)
+                                  .textCase(.uppercase)
 
-                                  Button(\"Light\") { selectedTheme = true }
-                                      .frame(maxWidth: .infinity)
-                                      .padding(.vertical, 10)
-                                      .background(selectedTheme ? Color.cyan.opacity(0.9) : Color.white.opacity(0.12))
-                                      .foregroundColor(selectedTheme ? .black : textColor)
-                                      .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                              HStack(spacing: 10) {
+                                  Button("Dark") {
+                                      selectedTheme = false
+                                  }
+                                  .frame(maxWidth: .infinity)
+                                  .padding(.vertical, 10)
+                                  .background(selectedTheme ? Color.white.opacity(0.12) : Color.cyan.opacity(0.9))
+                                  .foregroundColor(selectedTheme ? textColor : .black)
+                                  .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                                  Button("Light") {
+                                      selectedTheme = true
+                                  }
+                                  .frame(maxWidth: .infinity)
+                                  .padding(.vertical, 10)
+                                  .background(selectedTheme ? Color.cyan.opacity(0.9) : Color.white.opacity(0.12))
+                                  .foregroundColor(selectedTheme ? .black : textColor)
+                                  .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                               }
                           }
                       }
 
                       panel {
                           Button(action: {}) {
-                              Text(\"БУМ\")
+                              Text("БУМ")
                                   .font(.system(size: 18, weight: .heavy, design: .rounded))
                                   .frame(maxWidth: .infinity)
                                   .padding(.vertical, 12)
@@ -294,13 +317,15 @@ jobs:
               private var mainPanel: some View {
                   VStack(spacing: 0) {
                       HStack {
-                          Text(\"Live Event Stream\")
+                          Text("Live Event Stream")
                               .font(.system(size: 24, weight: .bold, design: .rounded))
                               .foregroundColor(textColor)
+
                           Spacer()
+
                           HStack(spacing: 8) {
                               Circle().frame(width: 10, height: 10).foregroundColor(.green)
-                              Text(\"\\(filteredLogs.count) events\")
+                              Text("\(filteredLogs.count) events")
                                   .font(.system(size: 14, weight: .semibold))
                                   .foregroundColor(mutedText)
                           }
@@ -358,11 +383,11 @@ jobs:
 
               private func sourceTitle(_ value: String) -> String {
                   switch value {
-                  case \"kernel\": return \"Kernel\"
-                  case \"api\": return \"API\"
-                  case \"db\": return \"Database\"
-                  case \"auth\": return \"Auth\"
-                  case \"scheduler\": return \"Scheduler\"
+                  case "kernel": return "Kernel"
+                  case "api": return "API"
+                  case "db": return "Database"
+                  case "auth": return "Auth"
+                  case "scheduler": return "Scheduler"
                   default: return value
                   }
               }
