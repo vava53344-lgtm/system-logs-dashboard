@@ -9,40 +9,26 @@ on:
 
 jobs:
   build:
-    name: Build SwiftUI app
     runs-on: macos-15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show repo structure
-        shell: bash
-        run: |
-          echo "Repository root:"
-          ls -la
-          echo "---"
-          find . -maxdepth 3 \( -name '*.xcodeproj' -o -name '*.xcworkspace' -o -name '*.swift' \) | sort
-
       - name: Check for Xcode project
-        id: xcode_check
         shell: bash
         run: |
-          if find . -maxdepth 4 \( -name '*.xcodeproj' -o -name '*.xcworkspace' \) | grep -q .; then
-            echo "has_xcode=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_xcode=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "Searching for Xcode project..."
+          find . -maxdepth 4 \( -name "*.xcodeproj" -o -name "*.xcworkspace" \) | sort
 
-      - name: Build app in Xcode
-        if: steps.xcode_check.outputs.has_xcode == 'true'
+      - name: Build iOS app
+        if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj') != '' }}
         shell: bash
         run: |
-          PROJECT_PATH=$(find . -maxdepth 4 -name '*.xcodeproj' | head -n 1)
+          PROJECT_PATH=$(find . -maxdepth 4 -name "*.xcodeproj" | head -n 1)
           SCHEME_NAME=$(xcodebuild -list -project "$PROJECT_PATH" 2>/dev/null | awk '/Schemes:/{flag=1; next} flag && NF {print; exit}')
 
           if [ -z "$SCHEME_NAME" ]; then
-            echo "Could not detect scheme. Looking for default scheme..."
             SCHEME_NAME="SystemLogsApp"
           fi
 
@@ -55,9 +41,9 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             build
 
-      - name: Note: no Xcode project detected yet
-        if: steps.xcode_check.outputs.has_xcode == 'false'
+      - name: No Xcode project found
+        if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj') == '' }}
         shell: bash
         run: |
-          echo "No .xcodeproj or .xcworkspace was found in this repository yet."
-          echo "This workflow is ready for the iOS project when you add the Xcode project files."
+          echo "No Xcode project found yet."
+          echo "Add .xcodeproj or .xcworkspace to enable build."
