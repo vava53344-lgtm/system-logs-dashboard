@@ -1,4 +1,4 @@
-name: iOS build
+name: Build iOS app in one file
 
 on:
   push:
@@ -15,35 +15,389 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check for Xcode project
+      - name: Install xcodegen
         shell: bash
         run: |
-          echo "Searching for Xcode project..."
-          find . -maxdepth 4 \( -name "*.xcodeproj" -o -name "*.xcworkspace" \) | sort
+          brew install xcodegen
 
-      - name: Build iOS app
-        if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj') != '' }}
+      - name: Generate app source files and project
         shell: bash
         run: |
-          PROJECT_PATH=$(find . -maxdepth 4 -name "*.xcodeproj" | head -n 1)
-          SCHEME_NAME=$(xcodebuild -list -project "$PROJECT_PATH" 2>/dev/null | awk '/Schemes:/{flag=1; next} flag && NF {print; exit}')
+          mkdir -p SystemLogsApp/Assets.xcassets/AppIcon.appiconset
 
-          if [ -z "$SCHEME_NAME" ]; then
-            SCHEME_NAME="SystemLogsApp"
-          fi
+          cat > project.yml <<'EOF'
+          name: SystemLogsApp
+          options:
+            bundleIdPrefix: com.example
+            deploymentTarget:
+              iOS: "17.0"
 
-          echo "Using project: $PROJECT_PATH"
-          echo "Using scheme: $SCHEME_NAME"
+          targets:
+            SystemLogsApp:
+              type: application
+              platform: iOS
+              deploymentTarget: "17.0"
+              sources:
+                - path: SystemLogsApp
+              resources:
+                - path: SystemLogsApp/Assets.xcassets
+              settings:
+                PRODUCT_BUNDLE_IDENTIFIER: com.example.SystemLogsApp
+                GENERATE_INFOPLIST_FILE: NO
+                INFOPLIST_FILE: SystemLogsApp/Info.plist
+                CODE_SIGN_STYLE: Automatic
+                CODE_SIGNING_ALLOWED: NO
+                SWIFT_VERSION: 5.9
+                IPHONEOS_DEPLOYMENT_TARGET: 17.0
+                TARGETED_DEVICE_FAMILY: "1,2"
+          EOF
 
+          cat > SystemLogsApp/SystemLogsAppApp.swift <<'EOF'
+          import SwiftUI
+
+          @main
+          struct SystemLogsAppApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      ContentView()
+                  }
+              }
+          }
+          EOF
+
+          cat > SystemLogsApp/Info.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>$(DEVELOPMENT_LANGUAGE)</string>
+              <key>CFBundleExecutable</key>
+              <string>$(EXECUTABLE_NAME)</string>
+              <key>CFBundleIdentifier</key>
+              <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+              <key>CFBundleInfoDictionaryVersion</key>
+              <string>6.0</string>
+              <key>CFBundleName</key>
+              <string>$(PRODUCT_NAME)</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>UIApplicationSceneManifest</key>
+              <dict>
+                  <key>UIApplicationSupportsMultipleScenes</key>
+                  <true/>
+              </dict>
+              <key>UILaunchScreen</key>
+              <dict/>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+                  <string>UIInterfaceOrientationLandscapeLeft</string>
+                  <string>UIInterfaceOrientationLandscapeRight</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
+
+          cat > SystemLogsApp/Assets.xcassets/Contents.json <<'EOF'
+          {
+            "info" : {
+              "version" : 1,
+              "author" : "xcode"
+            }
+          }
+          EOF
+
+          cat > SystemLogsApp/Assets.xcassets/AppIcon.appiconset/Contents.json <<'EOF'
+          {
+            "images" : [],
+            "info" : {
+              "version" : 1,
+              "author" : "xcode"
+            }
+          }
+          EOF
+
+          cat > SystemLogsApp/ContentView.swift <<'EOF'
+          import SwiftUI
+
+          enum LogLevel: String, CaseIterable {
+              case info = "INFO"
+              case warning = "WARN"
+              case error = "ERROR"
+              case success = "OK"
+          }
+
+          struct LogEntry: Identifiable {
+              let id = UUID()
+              let time: String
+              let source: String
+              let level: LogLevel
+              let message: String
+          }
+
+          struct ContentView: View {
+              @State private var searchText = ""
+              @State private var selectedSource = "all"
+              @State private var selectedTheme = false
+              @State private var selectedLevels: Set<LogLevel> = [.info, .warning, .error, .success]
+
+              private let logData: [LogEntry] = [
+                  LogEntry(time: "00:01:12", source: "kernel", level: .info, message: "System clock synchronized with NTP server"),
+                  LogEntry(time: "00:02:08", source: "api", level: .warning, message: "Rate limit approaching for /v1/metrics"),
+                  LogEntry(time: "00:03:41", source: "db", level: .success, message: "Daily backup completed successfully"),
+                  LogEntry(time: "00:04:22", source: "auth", level: .error, message: "Authentication token expired for user 4821"),
+                  LogEntry(time: "00:06:10", source: "scheduler", level: .info, message: "Queued job sync-customer-index finished without errors"),
+                  LogEntry(time: "00:08:02", source: "api", level: .success, message: "Deploy healthcheck passed for staging cluster"),
+                  LogEntry(time: "00:09:02", source: "kernel", level: .warning, message: "Disk usage above 78% on /var/lib"),
+                  LogEntry(time: "00:11:11", source: "db", level: .error, message: "Connection pool saturation detected on replica-2")
+              ]
+
+              private var filteredLogs: [LogEntry] {
+                  logData.filter { log in
+                      let levelMatch = selectedLevels.contains(log.level)
+                      let sourceMatch = selectedSource == "all" || log.source == selectedSource
+                      let query = searchText.lowercased()
+                      let textMatch = query.isEmpty || log.message.lowercased().contains(query) || log.source.lowercased().contains(query)
+                      return levelMatch && sourceMatch && textMatch
+                  }
+              }
+
+              private var background: LinearGradient {
+                  selectedTheme
+                      ? LinearGradient(colors: [Color.white, Color(white: 0.92)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                      : LinearGradient(colors: [Color(red: 0.04, green: 0.06, blue: 0.12), Color(red: 0.08, green: 0.12, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing)
+              }
+
+              private var textColor: Color { selectedTheme ? .black : .white }
+              private var mutedText: Color { selectedTheme ? .black.opacity(0.7) : .white.opacity(0.7) }
+
+              var body: some View {
+                  ZStack {
+                      background.ignoresSafeArea()
+
+                      HStack(alignment: .top, spacing: 18) {
+                          sidebar.frame(width: 290)
+                          mainPanel.frame(maxWidth: .infinity, maxHeight: .infinity)
+                      }
+                      .padding(20)
+                  }
+              }
+
+              private var sidebar: some View {
+                  VStack(alignment: .leading, spacing: 18) {
+                      HStack {
+                          Text("System Logs")
+                              .font(.system(size: 18, weight: .semibold, design: .rounded))
+                              .foregroundColor(textColor)
+                          Spacer()
+                          Circle().fill(Color.green).frame(width: 10, height: 10)
+                      }
+
+                      panel {
+                          VStack(alignment: .leading, spacing: 10) {
+                              Text("Search").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              TextField("Filter logs...", text: $searchText)
+                                  .padding(12)
+                                  .background(selectedTheme ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
+                                  .foregroundColor(textColor)
+                                  .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                          }
+                      }
+
+                      panel {
+                          VStack(alignment: .leading, spacing: 10) {
+                              Text("Levels").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              ForEach(LogLevel.allCases, id: \.self) { level in
+                                  Toggle(isOn: Binding(
+                                      get: { selectedLevels.contains(level) },
+                                      set: { isOn in
+                                          if isOn { selectedLevels.insert(level) } else { selectedLevels.remove(level) }
+                                      }
+                                  )) {
+                                      HStack {
+                                          Text(level.rawValue)
+                                              .font(.system(size: 12, weight: .bold))
+                                              .frame(width: 58, alignment: .leading)
+                                              .padding(.vertical, 6)
+                                              .padding(.horizontal, 8)
+                                              .background(levelColor(level))
+                                              .clipShape(Capsule())
+                                          Spacer()
+                                      }
+                                  }
+                                  .tint(.cyan)
+                              }
+                          }
+                      }
+
+                      panel {
+                          VStack(alignment: .leading, spacing: 10) {
+                              Text("Source").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              Picker(\"Source\", selection: $selectedSource) {
+                                  Text(\"All sources\").tag(\"all\")
+                                  Text(\"Kernel\").tag(\"kernel\")
+                                  Text(\"API\").tag(\"api\")
+                                  Text(\"Database\").tag(\"db\")
+                                  Text(\"Auth\").tag(\"auth\")
+                                  Text(\"Scheduler\").tag(\"scheduler\")
+                              }
+                              .pickerStyle(.menu)
+                              .tint(textColor)
+                          }
+                      }
+
+                      panel {
+                          VStack(alignment: .leading, spacing: 10) {
+                              Text(\"Theme\").font(.system(size: 11, weight: .bold)).foregroundColor(mutedText).textCase(.uppercase)
+                              HStack(spacing: 10) {
+                                  Button(\"Dark\") { selectedTheme = false }
+                                      .frame(maxWidth: .infinity)
+                                      .padding(.vertical, 10)
+                                      .background(selectedTheme ? Color.white.opacity(0.12) : Color.cyan.opacity(0.9))
+                                      .foregroundColor(selectedTheme ? textColor : .black)
+                                      .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                                  Button(\"Light\") { selectedTheme = true }
+                                      .frame(maxWidth: .infinity)
+                                      .padding(.vertical, 10)
+                                      .background(selectedTheme ? Color.cyan.opacity(0.9) : Color.white.opacity(0.12))
+                                      .foregroundColor(selectedTheme ? .black : textColor)
+                                      .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                              }
+                          }
+                      }
+
+                      panel {
+                          Button(action: {}) {
+                              Text(\"БУМ\")
+                                  .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                  .frame(maxWidth: .infinity)
+                                  .padding(.vertical, 12)
+                                  .foregroundColor(.white)
+                                  .background(LinearGradient(colors: [.pink, .red], startPoint: .leading, endPoint: .trailing))
+                                  .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                          }
+                      }
+                  }
+                  .padding(16)
+                  .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.ultraThinMaterial))
+                  .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(.white.opacity(0.2), lineWidth: 1))
+              }
+
+              private var mainPanel: some View {
+                  VStack(spacing: 0) {
+                      HStack {
+                          Text(\"Live Event Stream\")
+                              .font(.system(size: 24, weight: .bold, design: .rounded))
+                              .foregroundColor(textColor)
+                          Spacer()
+                          HStack(spacing: 8) {
+                              Circle().frame(width: 10, height: 10).foregroundColor(.green)
+                              Text(\"\\(filteredLogs.count) events\")
+                                  .font(.system(size: 14, weight: .semibold))
+                                  .foregroundColor(mutedText)
+                          }
+                      }
+                      .padding(.horizontal, 20)
+                      .padding(.vertical, 18)
+
+                      ScrollView {
+                          LazyVStack(spacing: 12) {
+                              ForEach(filteredLogs) { log in
+                                  HStack(alignment: .center, spacing: 14) {
+                                      Text(log.time)
+                                          .font(.system(size: 12, weight: .bold, design: .rounded))
+                                          .foregroundColor(mutedText)
+                                          .frame(width: 80, alignment: .leading)
+
+                                      Text(sourceTitle(log.source))
+                                          .font(.system(size: 12, weight: .bold))
+                                          .foregroundColor(textColor)
+                                          .frame(width: 80, alignment: .leading)
+
+                                      Text(log.message)
+                                          .font(.system(size: 15))
+                                          .foregroundColor(textColor)
+                                          .frame(maxWidth: .infinity, alignment: .leading)
+
+                                      Text(log.level.rawValue)
+                                          .font(.system(size: 11, weight: .heavy))
+                                          .padding(.horizontal, 8)
+                                          .padding(.vertical, 6)
+                                          .background(levelColor(log.level))
+                                          .foregroundColor(levelTextColor(log.level))
+                                          .clipShape(Capsule())
+                                  }
+                                  .padding(12)
+                                  .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(selectedTheme ? Color.white.opacity(0.22) : Color.white.opacity(0.04)))
+                                  .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+                              }
+                          }
+                          .padding(16)
+                      }
+                  }
+                  .padding(8)
+                  .background(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.ultraThinMaterial))
+                  .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(.white.opacity(0.22), lineWidth: 1))
+              }
+
+              @ViewBuilder
+              private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+                  content()
+                      .padding(16)
+                      .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.ultraThinMaterial))
+                      .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(.white.opacity(0.22), lineWidth: 1))
+              }
+
+              private func sourceTitle(_ value: String) -> String {
+                  switch value {
+                  case \"kernel\": return \"Kernel\"
+                  case \"api\": return \"API\"
+                  case \"db\": return \"Database\"
+                  case \"auth\": return \"Auth\"
+                  case \"scheduler\": return \"Scheduler\"
+                  default: return value
+                  }
+              }
+
+              private func levelColor(_ level: LogLevel) -> Color {
+                  switch level {
+                  case .info: return .cyan.opacity(0.2)
+                  case .warning: return .yellow.opacity(0.2)
+                  case .error: return .red.opacity(0.2)
+                  case .success: return .green.opacity(0.2)
+                  }
+              }
+
+              private func levelTextColor(_ level: LogLevel) -> Color {
+                  switch level {
+                  case .info: return .cyan
+                  case .warning: return .yellow
+                  case .error: return .red
+                  case .success: return .green
+                  }
+              }
+          }
+
+          #Preview {
+              ContentView()
+          }
+          EOF
+
+          xcodegen generate
+
+      - name: Build app
+        shell: bash
+        run: |
           xcodebuild \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME_NAME" \
+            -project SystemLogsApp.xcodeproj \
+            -scheme SystemLogsApp \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             build
-
-      - name: No Xcode project found
-        if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj') == '' }}
-        shell: bash
-        run: |
-          echo "No Xcode project found yet."
-          echo "Add .xcodeproj or .xcworkspace to enable build."
