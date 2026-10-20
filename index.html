@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Logs Console</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-2: #111827;
+      --panel: #151d2d;
+      --panel-2: #1c2940;
+      --line: rgba(255,255,255,0.08);
+      --text: #e5edf7;
+      --muted: #9baec5;
+      --accent: #66d9ef;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --success: #34d399;
+      --shadow: rgba(0,0,0,0.35);
+      --boom: #ff3d7a;
+    }
+
+    body[data-theme="light"] {
+      --bg: #edf3ff;
+      --bg-2: #dfeafc;
+      --panel: #f9fbff;
+      --panel-2: #edf4ff;
+      --soft: #dfe9ff;
+      --line: rgba(21,43,84,0.1);
+      --text: #1c2436;
+      --muted: #52627d;
+      --accent: #0ea5e9;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --success: #059669;
+      --shadow: rgba(28, 52, 94, 0.12);
+      --boom: #ef2d7f;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Inter, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, var(--bg), var(--bg-2));
+      color: var(--text);
+    }
+
+    body {
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: 100vh;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .sidebar, .main-panel {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 14px 28px var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .sidebar {
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand h1 {
+      font-size: 1rem;
+      margin: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 16px var(--success);
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .search {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+      font-size: 0.96rem;
+    }
+
+    .search::placeholder {
+      color: var(--muted);
+    }
+
+    .levels {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+      color: var(--text);
+      font-size: 0.94rem;
+      cursor: pointer;
+    }
+
+    .check input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      transform: translateY(-1px);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 67px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .info { background: rgba(102,217,239,0.14); color: var(--accent); }
+    .warn { background: rgba(251,191,36,0.15); color: var(--warning); }
+    .err { background: rgba(248,113,113,0.14); color: var(--danger); }
+    .good { background: rgba(52,211,153,0.14); color: var(--success); }
+
+    .select-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    select {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    .theme-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .theme-btn, .boom-btn {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      color: var(--text);
+      background: var(--panel-2);
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .theme-btn:hover, .boom-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .theme-btn.active {
+      background: linear-gradient(135deg, var(--accent), #7c9cff);
+      color: #07111f;
+      border-color: transparent;
+    }
+
+    .boom-btn {
+      background: linear-gradient(135deg, var(--danger), var(--boom));
+      border: none;
+      color: white;
+      font-size: 1rem;
+      box-shadow: 0 10px 22px rgba(239, 45, 127, 0.38);
+      width: 100%;
+    }
+
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.015);
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: 0.03em;
+    }
+
+    .meta {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .live {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 14px var(--success);
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.75; }
+    }
+
+    .log-shell {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .logs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .log-row {
+      display: grid;
+      grid-template-columns: 98px 110px 1fr 110px;
+      align-items: center;
+      gap: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      transition: border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .log-row:hover {
+      border-color: rgba(102,217,239,0.35);
+      transform: translateY(-1px);
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .source {
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    .message {
+      font-size: 0.95rem;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .level-badge {
+      justify-self: end;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 6px 8px;
+      border-radius: 999px;
+    }
+
+    .level-info { background: rgba(102,217,239,0.1); color: var(--accent); }
+    .level-warning { background: rgba(251,191,36,0.12); color: var(--warning); }
+    .level-error { background: rgba(248,113,113,0.12); color: var(--danger); }
+    .level-success { background: rgba(52,211,153,0.12); color: var(--success); }
+
+    .empty {
+      display: none;
+      padding: 38px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+    }
+
+    .empty.show {
+      display: block;
+    }
+
+    .floating-boom {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: white;
+      text-shadow:
+        0 0 12px rgba(255, 255, 255, 0.65),
+        0 0 30px rgba(255, 61, 122, 0.9),
+        0 0 60px rgba(255, 61, 122, 0.8);
+      background: linear-gradient(135deg, rgba(255,61,122,0.9), rgba(255,145,0,0.7));
+      padding: 10px 14px;
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(255,61,122,0.4);
+      animation: boomPop 1.1s ease forwards;
+      user-select: none;
+    }
+
+    @keyframes boomPop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-6deg); }
+      15% { opacity: 1; }
+      55% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(8deg); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4) rotate(-8deg) translateY(-18px); }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .log-row {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "time level"
+          "source source"
+          "message message";
+      }
+      .time { grid-area: time; }
+      .source { grid-area: source; }
+      .message { grid-area: message; }
+      .level-badge { grid-area: level; justify-self: end; }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>System Logs</h1>
+        <span class="dot"></span>
+      </div>
+
+      <div class="card">
+        <label class="label">Search</label>
+        <input id="searchInput" class="search" type="text" placeholder="Filter logs..." />
+      </div>
+
+      <div class="card">
+        <label class="label">Levels</label>
+        <div class="levels">
+          <label class="check"><input type="checkbox" class="levelToggle" value="info" checked /> <span class="pill info">INFO</span></label>
+          <label class="check"><input type="checkbox" class="levelToggle" value="warning" checked /> <span class="pill warn">WARN</span></label>
+          <label class="check"><input type="checkbox" class="levelToggle" value="error" checked /> <span class="pill err">ERROR</span></label>
+          <label class="check"><input type="checkbox" class="levelToggle" value="success" checked /> <span class="pill good">OK</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="label">Source</label>
+        <div class="select-wrap">
+          <select id="sourceFilter">
+            <option value="all">All sources</option>
+            <option value="kernel">Kernel</option>
+            <option value="api">API</option>
+            <option value="db">Database</option>
+            <option value="auth">Auth</option>
+            <option value="scheduler">Scheduler</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="label">Theme</label>
+        <div class="theme-buttons">
+          <button class="theme-btn active" data-theme="dark">Dark</button>
+          <button class="theme-btn" data-theme="light">Light</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="label">Actions</label>
+        <button class="boom-btn" id="boomBtn">БУМ</button>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <h2>Live Event Stream</h2>
+        <div class="meta">
+          <span class="live"></span>
+          <span id="countLabel">0 events</span>
+        </div>
+      </header>
+
+      <div class="log-shell">
+        <div id="logs" class="logs"></div>
+        <div id="emptyState" class="empty">No logs match the current filters.</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const logs = [
+      { time: "00:01:12", source: "kernel", level: "info", message: "System clock synchronized with NTP server" },
+      { time: "00:02:08", source: "api", level: "warning", message: "Rate limit approaching for /v1/metrics" },
+      { time: "00:03:41", source: "db", level: "success", message: "Daily backup completed successfully" },
+      { time: "00:04:22", source: "auth", level: "error", message: "Authentication token expired for user 4821" },
+      { time: "00:06:10", source: "scheduler", level: "info", message: "Queued job sync-customer-index finished without errors" },
+      { time: "00:07:35", source: "api", level: "success", message: "Deploy healthcheck passed for staging cluster" },
+      { time: "00:09:02", source: "kernel", level: "warning", message: "Disk usage above 78% on /var/lib" },
+      { time: "00:11:11", source: "db", level: "error", message: "Connection pool saturation detected on replica-2" },
+      { time: "00:12:19", source: "auth", level: "info", message: "MFA challenge issued for admin login attempt" },
+      { time: "00:13:55", source: "scheduler", level: "warning", message: "Background job retry count exceeded threshold" },
+      { time: "00:15:07", source: "api", level: "error", message: "Failed request: 503 on /api/search" },
+      { time: "00:16:44", source: "kernel", level: "success", message: "Memory compacting finished successfully" },
+      { time: "00:18:03", source: "db", level: "info", message: "Index rebuild completed on analytics table" },
+      { time: "00:20:29", source: "api", level: "info", message: "New API clients connected via websocket gateway" },
+      { time: "00:21:15", source: "auth", level: "success", message: "Password rotation completed for service account prod-worker" },
+      { time: "00:23:39", source: "kernel", level: "error", message: "Unexpected reboot reason: kernel panic recovered" },
+      { time: "00:24:58", source: "scheduler", level: "success", message: "Cleanup task removed 3.4GB of stale cache" },
+      { time: "00:26:11", source: "api", level: "warning", message: "Webhook retry queue exceeded normal latency" },
+      { time: "00:27:44", source: "db", level: "success", message: "Replica lag returned to normal threshold" },
+      { time: "00:29:10", source: "auth", level: "warning", message: "Multiple failed login attempts from 10.0.0.18" }
+    ];
+
+    const searchInput = document.getElementById("searchInput");
+    const sourceFilter = document.getElementById("sourceFilter");
+    const logsContainer = document.getElementById("logs");
+    const emptyState = document.getElementById("emptyState");
+    const countLabel = document.getElementById("countLabel");
+    const boomBtn = document.getElementById("boomBtn");
+
+    const selectedLevels = new Set(["info", "warning", "error", "success"]);
+    const sourceMap = {
+      kernel: "Kernel",
+      api: "API",
+      db: "Database",
+      auth: "Auth",
+      scheduler: "Scheduler"
+    };
+
+    function renderLogs() {
+      const query = searchInput.value.trim().toLowerCase();
+      const sourceValue = sourceFilter.value;
+
+      const filtered = logs.filter(log => {
+        const matchesLevel = selectedLevels.has(log.level);
+        const matchesSource = sourceValue === "all" || log.source === sourceValue;
+        const matchesText = !query || log.message.toLowerCase().includes(query) || log.source.toLowerCase().includes(query);
+        return matchesLevel && matchesSource && matchesText;
+      });
+
+      logsContainer.innerHTML = filtered.map(log => {
+        const levelClass = {
+          info: "level-info",
+          warning: "level-warning",
+          error: "level-error",
+          success: "level-success"
+        }[log.level];
+
+        return `
+          <div class="log-row">
+            <div class="time">${log.time}</div>
+            <div class="source">${sourceMap[log.source] || log.source}</div>
+            <div class="message">${log.message}</div>
+            <div class="level-badge ${levelClass}">${log.level}</div>
+          </div>
+        `;
+      }).join("");
+
+      emptyState.classList.toggle("show", filtered.length === 0);
+      countLabel.textContent = `${filtered.length} event${filtered.length === 1 ? "" : "s"}`;
+    }
+
+    searchInput.addEventListener("input", renderLogs);
+    sourceFilter.addEventListener("change", renderLogs);
+
+    document.querySelectorAll(".levelToggle").forEach(input => {
+      input.addEventListener("change", (e) => {
+        if (e.target.checked) selectedLevels.add(e.target.value);
+        else selectedLevels.delete(e.target.value);
+        renderLogs();
+      });
+    });
+
+    document.querySelectorAll(".theme-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const theme = btn.dataset.theme;
+        document.body.setAttribute("data-theme", theme);
+        document.querySelectorAll(".theme-btn").forEach(b => b.classList.toggle("active", b === btn));
+      });
+    });
+
+    boomBtn.addEventListener("click", () => {
+      for (let i = 0; i < 1000; i++) {
+        const popup = document.createElement("div");
+        popup.className = "floating-boom";
+        popup.textContent = "БУМ";
+        popup.style.left = `${Math.random() * 100}%`;
+        popup.style.top = `${Math.random() * 100}%`;
+        popup.style.fontSize = `${18 + Math.random() * 30}px`;
+        popup.style.transform = `translate(-50%, -50%) rotate(${(Math.random() * 30) - 15}deg)`;
+        document.body.appendChild(popup);
+
+        setTimeout(() => popup.remove(), 1100);
+      }
+    });
+
+    renderLogs();
+  </script>
+</body>
+</html>
