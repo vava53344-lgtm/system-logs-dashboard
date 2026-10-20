@@ -1,0 +1,63 @@
+name: iOS build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build SwiftUI app
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show repo structure
+        shell: bash
+        run: |
+          echo "Repository root:"
+          ls -la
+          echo "---"
+          find . -maxdepth 3 \( -name '*.xcodeproj' -o -name '*.xcworkspace' -o -name '*.swift' \) | sort
+
+      - name: Check for Xcode project
+        id: xcode_check
+        shell: bash
+        run: |
+          if find . -maxdepth 4 \( -name '*.xcodeproj' -o -name '*.xcworkspace' \) | grep -q .; then
+            echo "has_xcode=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_xcode=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build app in Xcode
+        if: steps.xcode_check.outputs.has_xcode == 'true'
+        shell: bash
+        run: |
+          PROJECT_PATH=$(find . -maxdepth 4 -name '*.xcodeproj' | head -n 1)
+          SCHEME_NAME=$(xcodebuild -list -project "$PROJECT_PATH" 2>/dev/null | awk '/Schemes:/{flag=1; next} flag && NF {print; exit}')
+
+          if [ -z "$SCHEME_NAME" ]; then
+            echo "Could not detect scheme. Looking for default scheme..."
+            SCHEME_NAME="SystemLogsApp"
+          fi
+
+          echo "Using project: $PROJECT_PATH"
+          echo "Using scheme: $SCHEME_NAME"
+
+          xcodebuild \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME_NAME" \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            build
+
+      - name: Note: no Xcode project detected yet
+        if: steps.xcode_check.outputs.has_xcode == 'false'
+        shell: bash
+        run: |
+          echo "No .xcodeproj or .xcworkspace was found in this repository yet."
+          echo "This workflow is ready for the iOS project when you add the Xcode project files."
