@@ -4,10 +4,6 @@
     classes = {};
     objectVersion = 56;
     objects = {
-        0A4431B1E7B4F3A1001A5D66 /* SystemLogsAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4431B0E7B4F3A1001A5D66 /* SystemLogsAppApp.swift */; };
-        0A4431B2E7B4F3A1001A5D66 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4431B1E7B4F3A1001A5D66 /* ContentView.swift */; };
-        0A4431B3E7B4F3A1001A5D66 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A4431B2E7B4F3A1001A5D66 /* Assets.xcassets */; };
-        0A4431B4E7B4F3A1001A5D66 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0A4431B3E7B4F3A1001A5D66 /* Info.plist */; };
 
         0A4431B0E7B4F3A1001A5D66 /* SystemLogsAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemLogsAppApp.swift; sourceTree = "<group>"; };
         0A4431B1E7B4F3A1001A5D66 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -31,11 +27,17 @@
             children = (
                 0A4431B7E7B4F3A1001A5D66 /* SystemLogsApp.app */,
             );
-            name = Product;
+            name = Products;
             sourceTree = "<group>";
         };
 
-        0A4431B7E7B4F3A1001A5D66 /* SystemLogsApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SystemLogsApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+        0A4431B7E7B4F3A1001A5D66 /* SystemLogsApp.app */ = {
+            isa = PBXFileReference;
+            explicitFileType = wrapper.application;
+            includeInIndex = 0;
+            path = SystemLogsApp.app;
+            sourceTree = BUILT_PRODUCTS_DIR;
+        };
 
         0A4431B8E7B4F3A1001A5D66 /* Project */ = {
             isa = PBXProject;
@@ -43,7 +45,10 @@
                 LastSwiftUpdateCheck = 1600;
                 LastUpgradeCheck = 1600;
                 TargetAttributes = {
-                    0A4431BAE7B4F3A1001A5D66 = { CreatedOnToolsVersion = 16.0; };
+                    0A4431BAE7B4F3A1001A5D66 = {
+                        CreatedOnToolsVersion = 16.0;
+                        ProvisioningStyle = Automatic;
+                    };
                 };
             };
             buildConfigurationList = 0A4431B9E7B4F3A1001A5D66 /* Build configuration list for PBXProject "SystemLogsApp" */;
@@ -94,9 +99,11 @@
         0A4431BBE7B4F3A1001A5D66 /* Debug */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                 ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CODE_SIGNING_ALLOWED = NO;
                 CODE_SIGN_STYLE = Automatic;
                 CURRENT_PROJECT_VERSION = 1;
                 DEVELOPMENT_TEAM = "";
@@ -116,9 +123,11 @@
         0A4431BCE7B4F3A1001A5D66 /* Release */ = {
             isa = XCBuildConfiguration;
             buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                 ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CODE_SIGNING_ALLOWED = NO;
                 CODE_SIGN_STYLE = Automatic;
                 CURRENT_PROJECT_VERSION = 1;
                 DEVELOPMENT_TEAM = "";
@@ -149,11 +158,14 @@
             isa = PBXSourcesBuildPhase;
             buildActionMask = 2147483647;
             files = (
-                0A4431B1E7B4F3A1001A5D66 /* ContentView.swift in Sources */,
-                0A4431B1E7B4F3A1001A5D66 /* SystemLogsAppApp.swift in Sources */,
+                0A4431C1E7B4F3A1001A5D66 /* ContentView.swift in Sources */,
+                0A4431C2E7B4F3A1001A5D66 /* SystemLogsAppApp.swift in Sources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
+
+        0A4431C1E7B4F3A1001A5D66 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4431B1E7B4F3A1001A5D66 /* ContentView.swift */; };
+        0A4431C2E7B4F3A1001A5D66 /* SystemLogsAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4431B0E7B4F3A1001A5D66 /* SystemLogsAppApp.swift */; };
 
         0A4431BFE7B4F3A1001A5D66 /* Frameworks */ = {
             isa = PBXFrameworksBuildPhase;
@@ -167,11 +179,14 @@
             isa = PBXResourcesBuildPhase;
             buildActionMask = 2147483647;
             files = (
-                0A4431B3E7B4F3A1001A5D66 /* Assets.xcassets in Resources */,
-                0A4431B4E7B4F3A1001A5D66 /* Info.plist in Resources */,
+                0A4431C3E7B4F3A1001A5D66 /* Assets.xcassets in Resources */,
+                0A4431C4E7B4F3A1001A5D66 /* Info.plist in Resources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
+
+        0A4431C3E7B4F3A1001A5D66 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A4431B2E7B4F3A1001A5D66 /* Assets.xcassets */; };
+        0A4431C4E7B4F3A1001A5D66 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0A4431B3E7B4F3A1001A5D66 /* Info.plist */; };
     };
     rootObject = 0A4431B8E7B4F3A1001A5D66 /* Project */;
 }
